@@ -91,7 +91,7 @@ def map_object_to_type(obj, cql_type):
         cassandra_types.cql_inet: lambda: str(obj),
         cassandra_types.cql_counter: lambda: obj if obj is long else long(str(obj)),
         cassandra_types.cql_varint: lambda: obj if obj is int else int(str(obj)),
-        cassandra_types.cql_blob: lambda: unicode(obj),
+        cassandra_types.cql_blob: lambda: bytearray(obj),
         cassandra_types.cql_ascii: lambda: unicode(obj),
         cassandra_types.cql_tinyint: lambda: obj if obj is int else int(str(obj)),
         cassandra_types.cql_smallint: lambda: obj if obj is int else int(str(obj)),
