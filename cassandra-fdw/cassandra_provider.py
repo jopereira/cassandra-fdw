@@ -18,6 +18,7 @@ import properties
 from logger import ERROR, WARNING, INFO, DEBUG
 from properties import ISDEBUG
 from cassandra.concurrent import execute_concurrent
+from multicorn import Qual
 
 
 class CassandraProvider:
@@ -63,6 +64,14 @@ class CassandraProvider:
         timeout = options.get("timeout", None)
         username = options.get("username", None)
         password = options.get("password", None)
+        self.equiv = []
+        for colname,coldef in columns.items():
+            if 'from' in coldef.options.keys():
+                exp = coldef.options['from'].strip()
+                if exp.startswith('lambda'):
+                    exp = exp[len('lambda'):].strip()
+                params = [i.strip() for i in exp.split(':')[0].split(',')]
+                self.equiv.append((params,colname,eval('lambda '+exp)))
 
         self.cluster = Cluster(hosts)
         if(username is not None):
@@ -268,6 +277,7 @@ class CassandraProvider:
             else:
                 formatting_str = '%s'
 
+            quals = self.translate_quals(quals)
             for qual in quals:
                 if qual.field_name == self.ROWIDCOLUMN:
                     rowid = qual.value
@@ -448,8 +458,27 @@ class CassandraProvider:
             logger.log(u"rowid requested")
         return self.ROWIDCOLUMN
 
+    def translate_quals(self, quals):
+        newquals = []
+        for params,colname,func in self.equiv:
+            values = []
+            for p in params:
+                for qual in quals:
+                    if qual.field_name == p and qual.operator == '=':
+                        # found this parameter
+                        values.append(qual.value)
+                        break
+                else:
+                    # parameter not found, quit
+                    break
+            else:
+                # all parameters found, use them
+                newquals.append(Qual(colname, '=', func(*values)))
+        return newquals+quals
+
     def get_rel_size(self, quals, columns):
         rccol = 0
+        quals = self.translate_quals(quals)
         used_quals = []
         for q in quals:
             if q.field_name in used_quals:
