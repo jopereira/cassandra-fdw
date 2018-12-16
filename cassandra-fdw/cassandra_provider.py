@@ -119,10 +119,11 @@ class CassandraProvider:
             for idx in table.indexes:
                 idx_options = table.indexes[idx].index_options
                 if "target" in idx_options:
+                    target = idx_options["target"].replace('"','')
                     if "class_name" in idx_options:
-                        self.indexes[idx_options["target"]] = idx_options["class_name"]
+                        self.indexes[target] = idx_options["class_name"]
                     else:
-                        self.indexes[idx_options["target"]] = ""
+                        self.indexes[target] = ""
 
         columns = table.columns
         componentIdx = 0
@@ -301,7 +302,7 @@ class CassandraProvider:
                                 usedQuals[qual.field_name] = qual.value
                                 if self.queryableColumns[qual.field_name] == self.CLUSTERING_KEY_QUERY_COST:
                                     last_clustering_key_idx = qual.componentIdx
-                                formatted = u" {0} = {1} ".format(qual.field_name, formatting_str)
+                                formatted = u' "{0}" = {1} '.format(qual.field_name, formatting_str)
                                 binding_values.append(types_mapper.map_object_to_type(qual.value, self.columnsTypes[qual.field_name]))
                                 if isWhere:
                                     stmt_str.write(u" AND ")
@@ -311,7 +312,7 @@ class CassandraProvider:
                                     stmt_str.write(formatted)
                                     isWhere = 1
                             elif allow_filtering:
-                                formatted = u" {0} = {1} ".format(qual.field_name, formatting_str)
+                                formatted = u' "{0}" = {1} '.format(qual.field_name, formatting_str)
                                 binding_values.append(types_mapper.map_object_to_type(qual.value, self.columnsTypes[qual.field_name]))
                                 if isWhere:
                                     stmt_str.write(u" AND ")
@@ -321,7 +322,7 @@ class CassandraProvider:
                                     stmt_str.write(formatted)
                                     isWhere = 1
                         elif allow_filtering:
-                            formatted = u" {0} = {1} ".format(qual.field_name, formatting_str)
+                            formatted = u' "{0}" = {1} ' .format(qual.field_name, formatting_str)
                             binding_values.append(types_mapper.map_object_to_type(qual.value, self.columnsTypes[qual.field_name]))
                             if isWhere:
                                 stmt_str.write(u" AND ")
@@ -336,7 +337,7 @@ class CassandraProvider:
                             if (self.queryableColumns[qual.field_name] == self.CLUSTERING_KEY_QUERY_COST or self.queryableColumns[qual.field_name] == self.PARTITION_KEY_QUERY_COST):
                                 if (qual.field_name not in usedQuals and not eqRestricted and not rangeUsed):
                                     usedQuals[qual.field_name] = qual.value
-                                    formatted = u"{0} IN {1}".format(qual.field_name, formatting_str)
+                                    formatted = u'"{0}" IN {1}'.format(qual.field_name, formatting_str)
                                     binding_value = []
                                     for el in qual.value:
                                         binding_value.append(types_mapper.map_object_to_type(el, self.columnsTypes[qual.field_name]))
@@ -357,7 +358,7 @@ class CassandraProvider:
                             val = "%{0}%".format(qual.value)
                         else:
                             val = qual.value
-                        stmt_str.write(u" AND {0} LIKE {1}".format(qual.field_name, formatting_str))
+                        stmt_str.write(u' AND "{0}" LIKE {1}'.format(qual.field_name, formatting_str))
                         binding_values.append(types_mapper.map_object_to_type(val, self.columnsTypes[qual.field_name]))
                     else:
                         if (qual.operator == ">" or qual.operator == "<" or qual.operator == ">=" or qual.operator == "<="):
@@ -368,10 +369,10 @@ class CassandraProvider:
                             or (allow_filtering and self.queryableColumns[qual.field_name] != self.PARTITION_KEY_QUERY_COST)):
                                 rangeUsed = True
                                 if isWhere:
-                                    stmt_str.write(u" AND {0} {1} {2}".format(qual.field_name, qual.operator, formatting_str))
+                                    stmt_str.write(u' AND "{0}" {1} {2}'.format(qual.field_name, qual.operator, formatting_str))
                                     binding_values.append(types_mapper.map_object_to_type(qual.value, self.columnsTypes[qual.field_name]))
                                 else:
-                                    stmt_str.write(u" WHERE {0} {1} {2}".format(qual.field_name, qual.operator, formatting_str))
+                                    stmt_str.write(u' WHERE "{0}" {1} {2}'.format(qual.field_name, qual.operator, formatting_str))
                                     isWhere = 1
                                     binding_values.append(types_mapper.map_object_to_type(qual.value, self.columnsTypes[qual.field_name]))
 
