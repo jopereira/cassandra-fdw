@@ -87,7 +87,7 @@ class CassandraProvider:
             self.session.default_timeout = float(timeout)
 
     def prepare_insert_stmt(self):
-        insert_stmt_str = u"INSERT INTO {0}.{1} ({2}) VALUES ({3})".format(
+        insert_stmt_str = u'INSERT INTO "{0}"."{1}" ({2}) VALUES ({3})'.format(
             self.keyspace, self.columnfamily, u",".join(self.queryableColumns), u",".join([u"?"] * len(self.queryableColumns)))
         if self.ttl != 0:
             insert_stmt_str += " USING TTL {0}".format(self.ttl)
@@ -100,7 +100,7 @@ class CassandraProvider:
             logger.log("insert statement prepared in {0} ms".format((time.time() - st) * 1000))
 
     def prepare_delete_stmt(self):
-        delete_stmt_str = u"DELETE FROM {0}.{1} WHERE {2};".format(self.keyspace, self.columnfamily, u" AND ".join(map(lambda str: str + u" = ?", self.rowIdColumns)))
+        delete_stmt_str = u'DELETE FROM "{0}"."{1}" WHERE {2};'.format(self.keyspace, self.columnfamily, u" AND ".join(map(lambda str: str + u" = ?", self.rowIdColumns)))
         if ISDEBUG:
             logger.log("preparing delete statement")
             st = time.time()
@@ -267,7 +267,7 @@ class CassandraProvider:
             for col in self.rowIdColumns:
                 if col not in filteredColumns:
                     filteredColumns.append(col)
-            stmt_str.write(u"SELECT {0} FROM {1}.{2}".format(",".join(map(lambda c: '"{0}"'.format(c), filteredColumns)), self.keyspace, self.columnfamily))
+            stmt_str.write(u'SELECT {0} FROM "{1}"."{2}"'.format(",".join(map(lambda c: '"{0}"'.format(c), filteredColumns)), self.keyspace, self.columnfamily))
             isWhere = None
             eqRestricted = None
             rangeUsed = False
