@@ -125,5 +125,6 @@ class CassandraFDW(ForeignDataWrapper):
         return self.cassandra_provider.get_rel_size(quals, columns)
 
     def get_path_keys(self):
+        self.build_cassandra_provider()
         self.scan_start_time = time.time()
         return self.cassandra_provider.get_path_keys()
