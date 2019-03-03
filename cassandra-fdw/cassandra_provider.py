@@ -458,22 +458,42 @@ class CassandraProvider:
             logger.log(u"rowid requested")
         return self.ROWIDCOLUMN
 
+    def gen_values(self, quals, prefix):
+        if quals == []:
+            return [ prefix ]
+        qual = quals[0]
+        quals = quals[1:]
+        if qual.operator == '=':
+            return self.gen_values(quals, prefix + [ qual.value ])
+        else: # ('=',True)
+            values = []
+            for v in qual.value:
+                values += self.gen_values(quals, prefix + [v])
+            return values
+
     def translate_quals(self, quals):
         newquals = []
         for params,colname,func in self.equiv:
-            values = []
+            removed = []
             for p in params:
                 for qual in quals:
-                    if qual.field_name == p and qual.operator == '=':
+                    if qual.field_name == p and (qual.operator == '=' or qual.operator == (u'=', True)):
                         # found this parameter
-                        values.append(qual.value)
+                        removed.append(qual)
                         break
                 else:
                     # parameter not found, quit
                     break
             else:
                 # all parameters found, use them
-                newquals.append(Qual(colname, '=', func(*values)))
+                values = self.gen_values(removed, [])                    
+                if len(values) == 1:
+                    newquals.append(Qual(colname, '=', func(*values[0])))
+                    quals = [ q for q in quals if q not in removed ]
+                else:
+                    # Using IN cluase. Remove all other qualifiers, as Cassandra is dumb.
+                    newquals.append(Qual(colname, (u'=', True), [ func(*v) for v in values ] ))
+                    quals = []
         return newquals+quals
 
     def get_rel_size(self, quals, columns):
